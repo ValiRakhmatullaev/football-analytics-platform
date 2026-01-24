@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "match_id": "uuid",
+    "generated_at": "ISO-8601 datetime",
+    "api_version": "v1"
+  },
+
+  "match": {
+    "id": "uuid",
+    "kickoff_time": "ISO-8601 datetime",
+    "status": "finished"
+  },
+
+  "score": {
+    "home": 0,
+    "away": 0
+  },
+
+  "teams": {
+    "home": {
+      "team_id": "uuid",
+      "name": "string",
+      "metrics": {
+        "possession_pct": 47.9,
+        "turnovers": 0,
+        "tempo": 19.63,
+        "epi_avg": null
+      },
+      "confidence": "high",
+      "players": [
+        {
+          "id": "uuid",
+          "full_name": "string",
+          "position": "string | null",
+          "minutes_played": 90,
+          "started": false
+        }
+      ]
+    },
+    "away": {
+      "team_id": "uuid",
+      "name": "string",
+      "metrics": {
+        "possession_pct": 52.1,
+        "turnovers": 0,
+        "tempo": 19.63,
+        "epi_avg": null
+      },
+      "confidence": "high",
+      "players": []
+    }
+  },
+
+  "key_insights": [],
+
+  "top_players": [],
+
+  "limitations": [
+    "string"
+  ]
+}

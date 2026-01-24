@@ -1,0 +1,139 @@
+{
+  "meta": {
+    "match_id": "uuid",
+    "player_id": "uuid",
+    "team_id": "uuid",
+    "opponent_team_id": "uuid",
+    "position": "CB",
+    "role": "ball_playing_defender",
+    "data_completeness": {
+      "events": 1.0,
+      "tracking": 0.0,
+      "video": 0.0
+    },
+    "generated_at": "ISO-8601 datetime",
+    "api_version": "v1"
+  },
+
+  "match_context": {
+    "minutes_played": 90,
+    "started": false,
+    "sub_on_minute": null,
+    "sub_off_minute": null,
+    "extra_time_minutes": 0,
+    "match_phase_distribution": {
+      "first_half": 45,
+      "second_half": 45,
+      "extra_time": 0
+    }
+  },
+
+  "event_summary": {
+    "offensive": {
+      "passes": 87,
+      "key_passes": 0,
+      "shots": 0,
+      "goals": 0,
+      "assists": 0,
+      "xg": 0.02
+    },
+    "defensive": {
+      "tackles": 0,
+      "interceptions": 1,
+      "clearances": 0,
+      "duels": 3
+    },
+    "discipline": {
+      "fouls": 0,
+      "yellow_cards": 0,
+      "red_cards": 0
+    }
+  },
+
+  "position_metrics": {
+    "baseline": {
+      "passes_per_90": 87,
+      "interceptions_per_90": 1
+    },
+    "expected": {
+      "passes_per_90": 65,
+      "interceptions_per_90": 2
+    },
+    "deviation": {
+      "passes": "+34%",
+      "interceptions": "-50%"
+    },
+    "percentiles": {
+      "passes": 72,
+      "interceptions": 41
+    }
+  },
+
+  "phase_metrics": {
+    "attack": {
+      "minutes_active": 51,
+      "events": 87,
+      "intensity": "high"
+    },
+    "defence": {
+      "minutes_active": 1,
+      "events": 1,
+      "intensity": "low"
+    },
+    "other": {
+      "minutes_active": 17,
+      "events": 18
+    }
+  },
+
+  "timeline": [
+    {
+      "minute": 2,
+      "second": 15,
+      "event_type": "pass",
+      "phase": "attack",
+      "zone": "middle_third",
+      "description": "Short pass in build-up"
+    }
+  ],
+
+  "insights": [
+    {
+      "code": "ATTACK_FOCUS",
+      "category": "involvement",
+      "text": "Игрок был наиболее активен в атакующей фазе.",
+      "confidence": "high",
+      "reliability": 0.82,
+      "evidence": {
+        "phase": "attack",
+        "events": 87,
+        "minutes_active": 51
+      },
+      "explainability": {
+        "why": "Большинство действий выполнено в атаке",
+        "why_not_defence": "Минимальное время активности в обороне"
+      }
+    }
+  ],
+
+  "decision_support": {
+    "summary": "Игрок надёжен в розыгрыше мяча, но мало вовлечён в оборону.",
+    "recommendations": [
+      "Использовать в матчах с контролем владения",
+      "Не перегружать оборонительными задачами"
+    ],
+    "risk_flags": [
+      {
+        "type": "defensive_gap",
+        "severity": "medium",
+        "description": "Низкое оборонительное участие"
+      }
+    ]
+  },
+
+  "limitations": [
+    "Отсутствуют трекинговые данные",
+    "Анализ выполнен без видеоконтекста",
+    "Часть метрик основана только на event-data"
+  ]
+}

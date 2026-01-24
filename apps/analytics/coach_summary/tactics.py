@@ -1,75 +1,42 @@
 from typing import Dict, Any
 from uuid import UUID
 
+from django.apps import apps
 from django.db.models import QuerySet, Avg
 
 from apps.competitions.models import Match
-from apps.events.models import Event
 
 
-# =========================
-# Utils
-# =========================
+# ============================================================
+# CONSTANTS (Domain knowledge)
+# ============================================================
+
+MATCH_DURATION_MIN = 90
+
+
+# ============================================================
+# DOMAIN UTILS (pure)
+# ============================================================
 
 def safe_divide(a: float, b: float) -> float:
     return a / b if b else 0.0
 
 
-def label_by_thresholds(value: float, thresholds: dict) -> str:
+def label_by_thresholds(value: float, thresholds: Dict[str, tuple]) -> str:
     for label, (min_v, max_v) in thresholds.items():
         if min_v <= value < max_v:
             return label
     return list(thresholds.keys())[-1]
 
 
-# =========================
-# Public API
-# =========================
+# ============================================================
+# DOMAIN METRICS (pure)
+# ============================================================
 
-def build_tactical_identity(
-    team_id: UUID,
-    matches: QuerySet[Match],
-    events: QuerySet[Event],
+def evaluate_ppda(
+    opponent_passes: int,
+    defensive_actions: int,
 ) -> Dict[str, Any]:
-    """
-    Fixes factual team behaviour based on events.
-    NOT a quality judgment.
-    """
-
-    return {
-        "ppda": calculate_ppda(team_id, events),
-        "possession": calculate_possession(team_id, events),
-        "defensive_line": calculate_defensive_line(team_id, events),
-        "tempo": calculate_tempo(team_id, events, matches),
-    }
-
-
-# =========================
-# Metrics
-# =========================
-
-def calculate_ppda(
-    team_id: UUID,
-    events: QuerySet[Event],
-) -> Dict[str, Any]:
-    """
-    PPDA = opponent passes / team defensive actions
-    Calculated in attacking 60% of the pitch
-    """
-
-    opponent_passes = events.exclude(
-        team_id=team_id
-    ).filter(
-        event_type="pass",
-        x__gte=40,
-    ).count()
-
-    defensive_actions = events.filter(
-        team_id=team_id,
-        event_type__in=["tackle", "interception", "foul"],
-        x__gte=40,
-    ).count()
-
     value = safe_divide(opponent_passes, defensive_actions)
 
     label = label_by_thresholds(
@@ -94,25 +61,10 @@ def calculate_ppda(
     }
 
 
-def calculate_possession(
-    team_id: UUID,
-    events: QuerySet[Event],
+def evaluate_possession(
+    team_passes: int,
+    opponent_passes: int,
 ) -> Dict[str, Any]:
-    """
-    Possession = team passes / total passes
-    """
-
-    team_passes = events.filter(
-        team_id=team_id,
-        event_type="pass",
-    ).count()
-
-    opponent_passes = events.exclude(
-        team_id=team_id
-    ).filter(
-        event_type="pass",
-    ).count()
-
     possession = safe_divide(
         team_passes,
         team_passes + opponent_passes,
@@ -140,25 +92,9 @@ def calculate_possession(
     }
 
 
-def calculate_defensive_line(
-    team_id: UUID,
-    events: QuerySet[Event],
+def evaluate_defensive_line(
+    avg_x: float,
 ) -> Dict[str, Any]:
-    """
-    Defensive line height = average X of team defensive actions
-    Field assumed 0–100
-    """
-
-    avg_x = (
-        events.filter(
-            team_id=team_id,
-            event_type__in=["tackle", "interception"],
-        )
-        .aggregate(avg_x=Avg("x"))
-        .get("avg_x")
-        or 0.0
-    )
-
     label = label_by_thresholds(
         avg_x,
         {
@@ -181,23 +117,11 @@ def calculate_defensive_line(
     }
 
 
-def calculate_tempo(
-    team_id: UUID,
-    events: QuerySet[Event],
-    matches: QuerySet[Match],
+def evaluate_tempo(
+    team_passes: int,
+    matches_count: int,
 ) -> Dict[str, Any]:
-    """
-    Tempo = team passes per minute
-    """
-
-    MATCH_DURATION_MIN = 90
-    total_minutes = len(matches) * MATCH_DURATION_MIN
-
-    team_passes = events.filter(
-        team_id=team_id,
-        event_type="pass",
-    ).count()
-
+    total_minutes = matches_count * MATCH_DURATION_MIN
     tempo = safe_divide(team_passes, total_minutes)
 
     label = label_by_thresholds(
@@ -219,4 +143,118 @@ def calculate_tempo(
         "value": round(tempo, 2),
         "label": label,
         "explanation": explanation,
+    }
+
+
+# ============================================================
+# INFRASTRUCTURE (Django ORM)
+# ============================================================
+
+def load_ppda_data(
+    team_id: UUID,
+    matches: QuerySet[Match],
+) -> tuple[int, int]:
+    Event = apps.get_model("events", "Event")
+
+    opponent_passes = (
+        Event.objects
+        .filter(
+            match__in=matches,
+            event_type="pass",
+            x__gte=40,
+        )
+        .exclude(team_id=team_id)
+        .count()
+    )
+
+    defensive_actions = (
+        Event.objects
+        .filter(
+            match__in=matches,
+            team_id=team_id,
+            event_type__in=["tackle", "interception", "foul"],
+            x__gte=40,
+        )
+        .count()
+    )
+
+    return opponent_passes, defensive_actions
+
+
+def load_pass_counts(
+    team_id: UUID,
+    matches: QuerySet[Match],
+) -> tuple[int, int]:
+    Event = apps.get_model("events", "Event")
+
+    team_passes = (
+        Event.objects
+        .filter(
+            match__in=matches,
+            team_id=team_id,
+            event_type="pass",
+        )
+        .count()
+    )
+
+    opponent_passes = (
+        Event.objects
+        .filter(
+            match__in=matches,
+            event_type="pass",
+        )
+        .exclude(team_id=team_id)
+        .count()
+    )
+
+    return team_passes, opponent_passes
+
+
+def load_defensive_line_x(
+    team_id: UUID,
+    matches: QuerySet[Match],
+) -> float:
+    Event = apps.get_model("events", "Event")
+
+    return (
+        Event.objects
+        .filter(
+            match__in=matches,
+            team_id=team_id,
+            event_type__in=["tackle", "interception"],
+        )
+        .aggregate(avg_x=Avg("x"))
+        .get("avg_x")
+        or 0.0
+    )
+
+
+# ============================================================
+# APPLICATION / USE-CASE
+# ============================================================
+
+def build_tactical_identity(
+    team_id: UUID,
+    matches: QuerySet[Match],
+) -> Dict[str, Any]:
+    """
+    Build tactical identity block for Coach Summary.
+    This describes HOW the team plays, not how well.
+    """
+
+    opponent_passes, defensive_actions = load_ppda_data(team_id, matches)
+    team_passes, opponent_passes_all = load_pass_counts(team_id, matches)
+    avg_def_line_x = load_defensive_line_x(team_id, matches)
+
+    return {
+        "ppda": evaluate_ppda(opponent_passes, defensive_actions),
+        "possession": evaluate_possession(
+            team_passes,
+            opponent_passes_all,
+        ),
+        "defensive_line": evaluate_defensive_line(avg_def_line_x),
+        "tempo": evaluate_tempo(
+            team_passes,
+            matches.count(),
+        ),
     }

@@ -1,22 +1,30 @@
-from rest_framework import serializers
+from dataclasses import dataclass
+from typing import List
 
 
-class SnapshotSerializer(serializers.Serializer):
+# ============================================================
+# Coach Summary — Output Schemas (Domain-level)
+# ============================================================
+
+@dataclass
+class SnapshotSchema:
+    """
+    High-level snapshot of team performance over a period.
+    """
+
     # Matches & results
-    matches_played = serializers.IntegerField()
-    wins = serializers.IntegerField()
-    draws = serializers.IntegerField()
-    losses = serializers.IntegerField()
+    matches_played: int
+    wins: int
+    draws: int
+    losses: int
 
     # Goals
-    goals_for = serializers.IntegerField()
-    goals_against = serializers.IntegerField()
+    goals_for: int
+    goals_against: int
 
     # Points
-    points = serializers.IntegerField()
-    points_per_match = serializers.FloatField()
+    points: int
+    points_per_match: float
 
-    # Form: W / D / L sequence
-    form = serializers.ListField(
-        child=serializers.ChoiceField(choices=["W", "D", "L"])
-    )
+    # Recent form (e.g. ["W", "D", "L"])
+    form: List[str]
