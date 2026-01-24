@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: fa_postgres
+    environment:
+      POSTGRES_DB: football_analytics
+      POSTGRES_USER: fa_user
+      POSTGRES_PASSWORD: fa_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - fa_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  fa_postgres_data:
