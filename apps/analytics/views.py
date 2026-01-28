@@ -19,14 +19,28 @@ class CoachSummaryView(APIView):
         team_id = request.query_params.get("team_id")
         match_ids = request.query_params.getlist("match_ids")
 
-        if not team_id or not match_ids:
-            raise ValidationError(
-                "team_id and match_ids[] are required"
-            )
+        if not team_id:
+            raise ValidationError("team_id is required")
+        
+        if not match_ids:
+            raise ValidationError("match_ids[] is required (at least one match_id)")
+
+        # Filter out empty strings
+        match_ids = [mid for mid in match_ids if mid and mid.strip()]
+
+        if not match_ids:
+            raise ValidationError("match_ids[] cannot be empty")
+
+        # Validate UUIDs
+        try:
+            team_uuid = UUID(team_id)
+            match_uuids = [UUID(mid) for mid in match_ids]
+        except ValueError as e:
+            raise ValidationError(f"Invalid UUID format: {str(e)}")
 
         summary = get_coach_summary(
-            team_id=UUID(team_id),
-            match_ids=[UUID(mid) for mid in match_ids],
+            team_id=team_uuid,
+            match_ids=match_uuids,
         )
 
         return Response(summary)

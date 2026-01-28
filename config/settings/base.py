@@ -130,3 +130,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+# Media files (user uploads)
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
+
+# FFmpeg path (optional - defaults to 'ffmpeg' in PATH)
+# Uncomment and set if ffmpeg is not in PATH
+# FFMPEG_PATH = "/Users/valijonrakhmatullaev/PyCharmMiscProject/ffmpeg_bin/ffmpeg"
