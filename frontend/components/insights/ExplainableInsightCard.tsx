@@ -1,4 +1,6 @@
 import { Insight } from "@/types/insight";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 
 interface Props {
   insight: Insight;
@@ -18,7 +20,7 @@ export function ExplainableInsightCard({ insight }: Props) {
       {/* TITLE */}
       {isLowSample && (
         <div className="mb-1 text-sm font-semibold text-yellow-600">
-          ⚠ Недостаточно данных
+          <FontAwesomeIcon icon={faExclamationTriangle} className="mr-1" /> Недостаточно данных
         </div>
       )}
 

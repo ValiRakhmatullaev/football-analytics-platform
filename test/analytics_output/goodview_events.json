@@ -1,0 +1,53 @@
+[
+  {
+    "event_type": "goal",
+    "timestamp_sec": 5.04,
+    "timestamp_ms": 5040,
+    "frame_id": 14,
+    "player_track_id": null,
+    "target_track_id": null,
+    "ball_x": 404.0,
+    "ball_y": 1071.5,
+    "confidence": 1.0,
+    "ball_speed_px_s": 430.58,
+    "goal_direction": "bottom"
+  },
+  {
+    "event_type": "shot",
+    "timestamp_sec": 23.04,
+    "timestamp_ms": 23040,
+    "frame_id": 64,
+    "player_track_id": null,
+    "target_track_id": null,
+    "ball_x": 1284.0,
+    "ball_y": 1072.5,
+    "confidence": 1.0,
+    "ball_speed_px_s": 3416.67,
+    "goal_direction": "bottom"
+  },
+  {
+    "event_type": "save",
+    "timestamp_sec": 28.8,
+    "timestamp_ms": 28800,
+    "frame_id": 80,
+    "player_track_id": 576,
+    "target_track_id": null,
+    "ball_x": 745.0,
+    "ball_y": 1072.5,
+    "confidence": 0.55,
+    "ball_speed_px_s": 188.89
+  },
+  {
+    "event_type": "pass",
+    "timestamp_sec": 29.52,
+    "timestamp_ms": 29520,
+    "frame_id": 82,
+    "player_track_id": 576,
+    "target_track_id": 181,
+    "ball_x": 691.0,
+    "ball_y": 1070.5,
+    "confidence": 0.6,
+    "from_track_id": 576,
+    "to_track_id": 181
+  }
+]

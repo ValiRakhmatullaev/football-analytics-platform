@@ -1,0 +1,18 @@
+# Video Analytics: детекция + трекинг + события + possession
+# Совместимость: ultralytics, supervision (опц.), opencv, sklearn
+
+# Обязательно
+opencv-python>=4.8.0
+numpy>=1.24.0
+ultralytics>=8.0.0
+scikit-learn>=1.2.0
+pandas>=1.5.0
+
+# Опционально: футбольная модель с Roboflow
+# roboflow>=1.1.0
+
+# Опционально: визуализация (аннотации боксов)
+# supervision>=0.20.0
+
+# Для пайплайна (уже в корневом requirements.txt при использовании с Django)
+# torch>=2.0.0  # ставится с ultralytics

@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFutbol, faBullseye, faExclamationTriangle, faUpload, faShieldAlt, faHandPaper, faBolt, faCircle, faSquare, faVideo } from "@fortawesome/free-solid-svg-icons";
+import { apiUrl } from "@/lib/api";
 
 interface VideoClip {
   id: string;
@@ -28,39 +31,72 @@ interface VideoClipsViewerProps {
 
 export default function VideoClipsViewer({ videoId }: VideoClipsViewerProps) {
   const [clips, setClips] = useState<VideoClip[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedClip, setSelectedClip] = useState<VideoClip | null>(null);
   const [filterType, setFilterType] = useState<string>("all");
   const [videoError, setVideoError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    fetchClips();
-  }, [videoId, filterType]);
+    if (!videoId) return;
 
-  const fetchClips = async () => {
+    // Abort previous request if exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Prevent duplicate requests
+    if (loading) return;
+
     setLoading(true);
     setError(null);
 
-    try {
-      const url =
-        filterType === "all"
-          ? `http://127.0.0.1:8000/api/analytics/videos/${videoId}/clips/`
-          : `http://127.0.0.1:8000/api/analytics/videos/${videoId}/clips/?type=${filterType}`;
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+    const url =
+      filterType === "all"
+        ? apiUrl(`/api/analytics/videos/${videoId}/clips/`)
+        : apiUrl(`/api/analytics/videos/${videoId}/clips/?type=${filterType}`);
+
+    fetch(url, { signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data: VideoClip[] | ClipsResponse) => {
+        if (!signal.aborted) {
+          // API returns array directly, not wrapped in object
+          const clipsArray = Array.isArray(data) ? data : data.clips || [];
+          setClips(clipsArray);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError') {
+          return; // Request was aborted
+        }
+        if (!signal.aborted) {
+          setError(err instanceof Error ? err.message : "Failed to load clips");
+        }
+      })
+      .finally(() => {
+        if (!signal.aborted) {
+          setLoading(false);
+        }
+      });
+
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-
-      const data: ClipsResponse = await response.json();
-      setClips(data.clips);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load clips");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+  }, [videoId, filterType]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -77,16 +113,16 @@ export default function VideoClipsViewer({ videoId }: VideoClipsViewerProps) {
 
   const getClipTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      goal: "⚽ Гол",
-      shot: "🎯 Удар",
-      dangerous_moment: "⚠️ Опасный момент",
-      pass: "📤 Ключевой пас",
-      tackle: "🛡️ Подкат",
-      save: "🧤 Сейв",
-      free_kick: "⚡ Штрафной",
-      penalty: "🥅 Пенальти",
-      corner: "📐 Угловой",
-      other: "📹 Другое",
+      goal: "Гол",
+      shot: "Удар",
+      dangerous_moment: "Опасный момент",
+      pass: "Ключевой пас",
+      tackle: "Подкат",
+      save: "Сейв",
+      free_kick: "Штрафной",
+      penalty: "Пенальти",
+      corner: "Угловой",
+      other: "Другое",
     };
     return labels[type] || type;
   };
@@ -178,7 +214,7 @@ export default function VideoClipsViewer({ videoId }: VideoClipsViewerProps) {
           <video
             controls
             className="w-full rounded"
-            src={`http://127.0.0.1:8000${selectedClip.video_url}`}
+            src={apiUrl(selectedClip.video_url)}
             onError={(e) => {
               const target = e.target as HTMLVideoElement;
               const error = target.error;
@@ -231,7 +267,7 @@ export default function VideoClipsViewer({ videoId }: VideoClipsViewerProps) {
             <div className="relative bg-gray-100 aspect-video">
               {clip.thumbnail_url ? (
                 <img
-                  src={`http://127.0.0.1:8000${clip.thumbnail_url}`}
+                  src={apiUrl(clip.thumbnail_url)}
                   alt={clip.title}
                   className="w-full h-full object-cover"
                 />

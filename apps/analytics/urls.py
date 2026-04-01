@@ -18,6 +18,13 @@ from apps.analytics.api.video_clips import (
     VideoClipsByTypeAPIView,
 )
 from apps.analytics.views import CoachSummaryView
+from apps.analytics.api.video_annotation import (
+    VideoAnnotationDataAPIView,
+    VideoSourceAPIView,
+    VideoExportAnnotationsAPIView,
+    VideoOverlaysAPIView,
+    ClipUpdateAPIView,
+)
 
 urlpatterns = [
     path(
@@ -91,5 +98,31 @@ urlpatterns = [
         "clips/<uuid:clip_id>/thumbnail/",
         VideoClipThumbnailAPIView.as_view(),
         name="clip-thumbnail",
+    ),
+    # Annotation endpoints
+    path(
+        "videos/<uuid:video_id>/annotation-data/",
+        VideoAnnotationDataAPIView.as_view(),
+        name="video-annotation-data",
+    ),
+    path(
+        "videos/<uuid:video_id>/source/",
+        VideoSourceAPIView.as_view(),
+        name="video-source",
+    ),
+    path(
+        "videos/<uuid:video_id>/export-annotations/",
+        VideoExportAnnotationsAPIView.as_view(),
+        name="video-export-annotations",
+    ),
+    path(
+        "videos/<uuid:video_id>/overlays/",
+        VideoOverlaysAPIView.as_view(),
+        name="video-overlays",
+    ),
+    path(
+        "clips/<uuid:clip_id>/",
+        ClipUpdateAPIView.as_view(),
+        name="clip-update",
     ),
 ]

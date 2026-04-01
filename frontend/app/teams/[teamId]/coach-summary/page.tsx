@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
 import { DecisionSummary } from "@/components/decision/DecisionSummary";
 import { ExplainableInsightCard } from "@/components/insights/ExplainableInsightCard";
 import { PerformanceSnapshot } from "@/components/performance/PerformanceSnapshot";
+import { BackButton } from "@/components/navigation/BackButton";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { apiUrl } from "@/lib/api";
 
 import { Insight } from "@/types/insight";
 import { PerformanceMetric } from "@/types/performance";
@@ -51,50 +55,155 @@ export default function CoachSummaryPage() {
   const searchParams = useSearchParams();
 
   const teamId = params.teamId;
-  const matchIds = searchParams.getAll("match_ids");
+  const matchIdsParam = searchParams.getAll("match_ids");
+
+  // Stabilize matchIds array to prevent infinite loops
+  const matchIds = useMemo(() => {
+    return matchIdsParam.filter((id) => id && id.trim()).map((id) => id.trim());
+  }, [matchIdsParam.join(",")]); // Join to create stable dependency
+
+  // Create stable string key for dependencies
+  const matchIdsKey = useMemo(() => {
+    // IMPORTANT: don't mutate matchIds via sort()
+    return [...matchIds].sort().join(",");
+  }, [matchIds.join(",")]);
 
   const [data, setData] = useState<CoachSummaryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const lastRequestKeyRef = useRef<string | null>(null);
 
   /* =======================
      FETCH
      ======================= */
 
   useEffect(() => {
-    if (!teamId || matchIds.length === 0) return;
+    const requestKey = `${teamId ?? ""}|${matchIdsKey}`;
+
+    // In Next.js dev (React StrictMode), effects can fire twice.
+    // This guard prevents sending the same request twice.
+    if (lastRequestKeyRef.current === requestKey && (loading || data)) {
+      return;
+    }
+
+    // Abort previous request if exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    if (!teamId) {
+      setError("Team ID is required");
+      setLoading(false);
+      return;
+    }
+
+    if (matchIds.length === 0) {
+      setError("At least one match ID is required");
+      setLoading(false);
+      return;
+    }
+
+    // Prevent duplicate requests
+    if (loading) {
+      return;
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    setError(null);
+    setLoading(true);
+    lastRequestKeyRef.current = requestKey;
 
     const query = new URLSearchParams();
     query.append("team_id", teamId);
-    matchIds.forEach((id) => query.append("match_ids", id));
+    matchIds.forEach((id) => {
+      query.append("match_ids", id);
+    });
 
     fetch(
-      `http://127.0.0.1:8000/api/analytics/coach-summary/?${query.toString()}`
+      apiUrl(`/api/analytics/coach-summary/?${query.toString()}`),
+      { signal }
     )
       .then((res) => {
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+          return res.json().then((errData) => {
+            throw new Error(errData.detail || errData.error || `HTTP ${res.status}`);
+          });
         }
         return res.json();
       })
       .then((json: CoachSummaryResponse) => {
-        setData(json);
+        if (!signal.aborted) {
+          setData(json);
+          setError(null);
+        }
       })
       .catch((err) => {
-        console.error(err);
-        setError("Failed to load coach summary");
+        if (err.name === 'AbortError') {
+          // Request was aborted, ignore
+          return;
+        }
+        console.error("Coach summary error:", err);
+        if (!signal.aborted) {
+          setError(err instanceof Error ? err.message : "Failed to load coach summary");
+        }
+      })
+      .finally(() => {
+        if (!signal.aborted) {
+          setLoading(false);
+        }
       });
-  }, [teamId, matchIds]);
+
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [teamId, matchIdsKey]); // Use stable string key instead of array
 
   /* =======================
      STATES
      ======================= */
 
   if (error) {
-    return <div className="p-6 text-red-600">{error}</div>;
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <BackButton href="/" label="← Назад к главной" />
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mt-6">
+          <div className="flex items-center gap-3 mb-2">
+            <FontAwesomeIcon icon={faExclamationTriangle} className="text-2xl text-red-500" />
+            <h2 className="text-lg font-semibold text-red-800">Ошибка загрузки аналитики</h2>
+          </div>
+          <p className="text-red-700 mb-4">{error}</p>
+          <div className="text-sm text-red-600">
+            <p>Проверьте:</p>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>Указан ли правильный ID команды</li>
+              <li>Указаны ли ID матчей</li>
+              <li>Существуют ли матчи в базе данных</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  if (!data) {
-    return <div className="p-6">Loading coach summary…</div>;
+  if (loading || !data) {
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <BackButton href="/" label="← Назад к главной" />
+        <div className="flex items-center justify-center py-12 mt-6">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Загрузка аналитики команды...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   /* =======================
@@ -148,6 +257,11 @@ export default function CoachSummaryPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-10">
+      {/* Back Button */}
+      <div>
+        <BackButton href="/" label="← Назад к главной" />
+      </div>
+      
       {/* Header */}
       <header className="space-y-1">
         <h1 className="text-xl font-semibold tracking-tight">

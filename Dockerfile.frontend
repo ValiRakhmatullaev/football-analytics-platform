@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY frontend/package.json /app/frontend/package.json
+
+# Install deps (package-lock is not present in repo)
+RUN cd frontend && npm install
+
+COPY frontend /app/frontend
+
+EXPOSE 3000
+
+ENV NEXT_TELEMETRY_DISABLED=1
+
+CMD ["sh", "-c", "cd frontend && npm run dev -- -H 0.0.0.0 -p 3000"]

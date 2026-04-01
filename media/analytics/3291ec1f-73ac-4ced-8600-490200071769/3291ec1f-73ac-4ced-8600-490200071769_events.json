@@ -1,0 +1,28 @@
+[
+  {
+    "event_type": "shot",
+    "timestamp_sec": 3.68,
+    "timestamp_ms": 3680,
+    "frame_id": 4,
+    "player_track_id": null,
+    "target_track_id": null,
+    "ball_x": 318.0,
+    "ball_y": 1064.0,
+    "confidence": 1.0,
+    "ball_speed_px_s": 1728.29,
+    "goal_direction": "bottom"
+  },
+  {
+    "event_type": "shot",
+    "timestamp_sec": 26.68,
+    "timestamp_ms": 26680,
+    "frame_id": 29,
+    "player_track_id": null,
+    "target_track_id": null,
+    "ball_x": 266.0,
+    "ball_y": 1071.0,
+    "confidence": 1.0,
+    "ball_speed_px_s": 867.39,
+    "goal_direction": "bottom"
+  }
+]

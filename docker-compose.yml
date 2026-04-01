@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: fa_backend
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: "config.settings.dev"
+    volumes:
+      - ./:/app
+      - /app/__pycache__
+      - fa_media:/app/media
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: fa_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:8000"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+      - /app/frontend/.next
+    depends_on:
+      - backend
+
+volumes:
+  fa_media:

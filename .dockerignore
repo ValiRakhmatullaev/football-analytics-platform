@@ -1,0 +1,12 @@
+**/__pycache__
+**/*.pyc
+**/.git
+**/.idea
+**/.vscode
+**/node_modules
+**/.next
+**/.venv
+**/venv
+*.sqlite3
+media/
+.DS_Store

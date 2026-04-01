@@ -1,0 +1,21 @@
+{
+  "exported_at": "2026-01-26T10:45:09.270115",
+  "match_id": null,
+  "period": 2,
+  "video_start_offset_ms": 3600000,
+  "total_events": 0,
+  "events": [],
+  "metadata": {
+    "video_path": "/Users/valijonrakhmatullaev/PyCharmMiscProject/second_half_60-70.mp4",
+    "video_metadata": {
+      "path": "/Users/valijonrakhmatullaev/PyCharmMiscProject/second_half_60-70.mp4",
+      "fps": 25.0,
+      "total_frames": 15042,
+      "duration_seconds": 601.68,
+      "width": 854,
+      "height": 480,
+      "fps_sample": 1.0
+    },
+    "pitch_calibrated": false
+  }
+}

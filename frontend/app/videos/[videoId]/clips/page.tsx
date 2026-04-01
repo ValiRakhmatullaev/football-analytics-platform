@@ -1,8 +1,9 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import VideoClipsViewer from "@/components/video/VideoClipsViewer";
 import Link from "next/link";
+import VideoClipsViewer from "@/components/video/VideoClipsViewer";
+import { BackButton } from "@/components/navigation/BackButton";
 
 export default function VideoClipsPage() {
   const params = useParams<{ videoId: string }>();
@@ -11,12 +12,13 @@ export default function VideoClipsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <BackButton href="/upload" label="← Назад к загрузке" />
           <Link
-            href="/upload"
-            className="text-blue-600 hover:text-blue-800 text-sm"
+            href={`/videos/${videoId}/annotate`}
+            className="px-4 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700"
           >
-            ← Назад к загрузке
+            Аннотация и нарезка
           </Link>
         </div>
         <VideoClipsViewer videoId={videoId} />

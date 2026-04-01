@@ -1,0 +1,5 @@
+timestamp_sec,timestamp_ms,frame_id,event_type,player_track_id,target_track_id,ball_x,ball_y,confidence
+5.04,5040,14,goal,,,404.0,1071.5,1.0
+23.04,23040,64,shot,,,1284.0,1072.5,1.0
+28.8,28800,80,save,576,,745.0,1072.5,0.55
+29.52,29520,82,pass,576,181,691.0,1070.5,0.6

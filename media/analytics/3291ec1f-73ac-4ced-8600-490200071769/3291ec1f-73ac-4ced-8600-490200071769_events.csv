@@ -1,0 +1,3 @@
+timestamp_sec,timestamp_ms,frame_id,event_type,player_track_id,target_track_id,ball_x,ball_y,confidence
+3.68,3680,4,shot,,,318.0,1064.0,1.0
+26.68,26680,29,shot,,,266.0,1071.0,1.0

@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { BackButton } from "@/components/navigation/BackButton";
+import { ActionButtons } from "@/components/navigation/ActionButtons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFilm, faChartBar } from "@fortawesome/free-solid-svg-icons";
+import { apiUrl } from "@/lib/api";
 
 /* =======================
    API TYPES
@@ -59,24 +64,62 @@ export default function MatchOverviewPage() {
 
   const [data, setData] = useState<MatchOverviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!matchId) return;
 
+    // Abort previous request if exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Prevent duplicate requests
+    if (loading) return;
+
+    setLoading(true);
+    setError(null);
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     fetch(
-      `http://127.0.0.1:8000/api/analytics/matches/${matchId}/overview/`
+      apiUrl(`/api/analytics/matches/${matchId}/overview/`),
+      { signal }
     )
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then((json: MatchOverviewResponse) => {
-        setData(json);
+        if (!signal.aborted) {
+          setData(json);
+          setError(null);
+        }
       })
       .catch((err) => {
-        console.error(err);
-        setError("Failed to load match overview");
+        if (err.name === 'AbortError') {
+          return; // Request was aborted
+        }
+        if (!signal.aborted) {
+          console.error(err);
+          setError("Failed to load match overview");
+        }
+      })
+      .finally(() => {
+        if (!signal.aborted) {
+          setLoading(false);
+        }
       });
+
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [matchId]);
 
   if (error) {
@@ -84,7 +127,14 @@ export default function MatchOverviewPage() {
   }
 
   if (!data) {
-    return <div className="p-6">Loading match overview…</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Загрузка матча...</p>
+        </div>
+      </div>
+    );
   }
 
   const { match, score, teams, key_insights, limitations } = data;
@@ -105,22 +155,39 @@ export default function MatchOverviewPage() {
       </header>
 
       {/* Scoreboard */}
-      <section className="flex items-center justify-center gap-10">
-        <span className="text-lg font-medium">
-          {teams.home.name}
-        </span>
+      <section className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-2xl">
+        <div className="flex items-center justify-center gap-8">
+          <div className="text-center flex-1">
+            <div className="text-white text-xl font-semibold mb-2">
+              {teams.home.name}
+            </div>
+            <div className="text-5xl font-bold text-white">
+              {score.home}
+            </div>
+          </div>
 
-        <div className="px-8 py-4 rounded-2xl bg-black text-white text-3xl font-semibold">
-          {score.home} : {score.away}
+          <div className="text-4xl font-bold text-gray-300">:</div>
+
+          <div className="text-center flex-1">
+            <div className="text-white text-xl font-semibold mb-2">
+              {teams.away.name}
+            </div>
+            <div className="text-5xl font-bold text-white">
+              {score.away}
+            </div>
+          </div>
         </div>
-
-        <span className="text-lg font-medium">
-          {teams.away.name}
-        </span>
       </section>
 
       {/* Navigation */}
-      <div className="flex justify-center gap-4">
+      <div className="flex flex-wrap justify-center gap-4">
+        <Link
+          href={`/matches/${match.id}/clips`}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition shadow-md hover:shadow-lg"
+        >
+          <FontAwesomeIcon icon={faFilm} />
+          <span>Просмотр и редактирование клипов</span>
+        </Link>
         {(["home", "away"] as const).map((side) => {
           const team = teams[side];
 
@@ -133,9 +200,10 @@ export default function MatchOverviewPage() {
                   match_ids: [match.id],
                 },
               }}
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition shadow-md hover:shadow-lg"
             >
-              Coach summary: {team.name}
+              <FontAwesomeIcon icon={faChartBar} />
+              <span>Аналитика: {team.name}</span>
             </Link>
           );
         })}
@@ -267,9 +335,10 @@ function PlayerRow({
 
       <Link
         href={`/matches/${matchId}/players/${player.id}`}
-        className="text-xs font-medium text-blue-600 hover:underline"
+        className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition shadow-sm hover:shadow-md"
       >
-        Profile →
+        <span>Профиль</span>
+        <span>→</span>
       </Link>
     </li>
   );
